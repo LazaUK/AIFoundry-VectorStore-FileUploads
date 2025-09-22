@@ -59,12 +59,126 @@ The notebook is structured to first establish a baseline and then run high-concu
 ### 3.1 `run_individual_sequential_test()`
 This function provides a baseline performance measurement. It processes 10 files one by one, in a single thread. This demonstrates the performance without any parallelism and serves as a point of comparison.
 
+``` Python
+def run_individual_sequential_test(file_paths, vector_store_id):
+    print("\n" + "="*70)
+    print(f"Running Individual Sequential Test: {len(file_paths)} files")
+    print("="*70)
+    
+    start_time = time.time()
+    successful_uploads = 0
+    
+    for i, file_path in enumerate(file_paths):
+        try:
+            # Step 1: Upload from local disk
+            with open(file_path, 'rb') as f:
+                uploaded_file = client.files.create(file=f, purpose="assistants")
+            
+            # Step 2: Add to vector store
+            client.vector_stores.files.create(
+                vector_store_id=vector_store_id,
+                file_id=uploaded_file.id
+            )
+            successful_uploads += 1
+            print(f"  Processed file {i+1}/{len(file_paths)}")
+        except Exception as e:
+            print(f"  Failed to process file {i+1}: {e}")
+            
+    total_duration = time.time() - start_time
+    completion_rate = successful_uploads / total_duration if total_duration > 0 else 0
+    
+    print("\n--- Individual Test Results ---")
+    return {
+        "Test Scenario": "1. Individual Sequential",
+        "Files": len(file_paths),
+        "Workers": 1,
+        "Successful": successful_uploads,
+        "Submission Rate (RPS)": f"{completion_rate:.2f}",
+        "Completion Rate (files/sec)": f"{completion_rate:.2f}",
+        "Total Time (s)": f"{total_duration:.2f}",
+        "Rate Limit Errors": 0
+    }
+```
+
 ### 3.2 `run_unified_concurrent_test()`
 This is the core of the performance test. The function is designed to be a realistic and accurate simulation of a high-load scenario. For each file, every worker thread performs the complete, unified workflow:
 1.  **Uploads the file** from the local disk to Azure OpenAI's staging area (`client.files.create`).
 2.  **Adds the uploaded file** to the target vector store (`client.vector_stores.files.create`).
 
+``` Python
+def run_unified_concurrent_test(file_paths, vector_store_id, num_workers):
+    print("\n" + "="*70)
+    print(f"Running Unified Concurrent Test: {len(file_paths)} files with {num_workers} workers")
+    print(f"Target Vector Store: {vector_store_id}")
+    print("="*70)
+    
+    results = []
+
+    # The task for each thread. This represents one complete, realistic operation.
+    def upload_and_add_worker(file_path):
+        request_start_time = time.time()
+        try:
+            # Step 1: Upload the file from the local machine.
+            with open(file_path, 'rb') as f:
+                uploaded_file = client.files.create(file=f, purpose="assistants")
+            
+            # Step 2: Add the now-uploaded file to the vector store.
+            client.vector_stores.files.create(
+                vector_store_id=vector_store_id,
+                file_id=uploaded_file.id
+            )
+            return {'success': True, 'request_time': request_start_time, 'completion_time': time.time(), 'error': None}
+        except Exception as e:
+            return {'success': False, 'request_time': request_start_time, 'completion_time': time.time(), 'error': str(e)}
+
+    # Use ThreadPoolExecutor to run the complete workflow concurrently
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [executor.submit(upload_and_add_worker, fp) for fp in file_paths]
+        for i, future in enumerate(futures):
+            results.append(future.result())
+            if (i + 1) % 20 == 0:
+                print(f"  ... {i+1}/{len(file_paths)} tasks completed.")
+
+    # --- Analyze the results ---
+    request_times = [r['request_time'] for r in results]
+    completion_times = [r['completion_time'] for r in results]
+    successful_results = [r for r in results if r['success']]
+    
+    submission_window = max(request_times) - min(request_times)
+    submission_rate = len(file_paths) / submission_window if submission_window > 0 else float('inf')
+    
+    total_duration = max(completion_times) - min(request_times)
+    completion_rate = len(successful_results) / total_duration if total_duration > 0 else 0
+    
+    rate_limit_errors = sum(1 for r in results if not r['success'] and '429' in r['error'])
+
+    return {
+        "Test Scenario": f"2. Concurrent ({num_workers} Workers)",
+        "Files": len(file_paths),
+        "Workers": num_workers,
+        "Successful": len(successful_results),
+        "Submission Rate (RPS)": f"{submission_rate:.2f}",
+        "Completion Rate (files/sec)": f"{completion_rate:.2f}",
+        "Total Time (s)": f"{total_duration:.2f}",
+        "Rate Limit Errors": rate_limit_errors
+    }
+```
+
 By running this unified task concurrently with a configurable number of workers (e.g., 20, 50, 100), it accurately measures both the **Request Submission Rate** and the final **Completion Rate**.
+
+``` Python
+scenarios_to_run = [20, 50, 100]
+all_concurrent_results = []
+
+for worker_count in scenarios_to_run:
+    # **# BOLD: Call the test function, passing the main_vector_store_id.**
+    test_result = run_unified_concurrent_test(
+        file_paths=test_files,
+        vector_store_id=vector_store_id,
+        num_workers=worker_count
+    )
+    all_concurrent_results.append(test_result)
+```
 
 ***
 
