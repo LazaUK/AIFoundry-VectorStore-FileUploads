@@ -190,13 +190,13 @@ The output is a pandas DataFrame that allows for easy comparison of the differen
 
 ```
 ==============================================================================================================
-COMPREHENSIVE PERFORMANCE ANALYSIS OF UNIFIED UPLOAD WORKFLOW
+PERFORMANCE ANALYSIS OF UNIFIED UPLOAD WORKFLOW
 ==============================================================================================================
-            Test Scenario  Files  Workers  Successful Submission Rate (RPS) Completion Rate (files/sec) Total Time (s) Rate Limit Errors
- 1. Individual Sequential     10        1          10                  0.55                        0.55          18.12                 0
- 2. Concurrent (20 Workers)    210       20         210                 26.55                       13.91          15.09                 0
- 3. Concurrent (50 Workers)    210       50         210                 58.11                       14.21          14.78                 0
-4. Concurrent (100 Workers)    210      100         210                 98.59                       14.43          14.55                 0
+              Test Scenario  Files  Workers  Successful Submission Rate (RPS) Completion Rate (files/sec) Total Time (s)  Rate Limit Errors
+   1. Individual Sequential     10        1          10                  0.56                        0.56          17.70                  0
+ 2. Concurrent (20 Workers)    200       20         200                  8.78                        7.88          25.37                  0
+ 2. Concurrent (50 Workers)    200       50         200                 15.42                       10.49          19.06                  0
+2. Concurrent (100 Workers)    200      100         199                 19.47                        9.44          21.08                  1
 ==============================================================================================================
 ```
 
