@@ -201,9 +201,11 @@ PERFORMANCE ANALYSIS OF UNIFIED UPLOAD WORKFLOW
 ```
 
 ### 4.2 Key Findings
-1.  **Submission Rate Scales with Workers**: As the number of concurrent workers increases from 20 to 100, the **Submission Rate** skyrockets from ~26 RPS to ~98 RPS. This proves that the client is fully capable of exceeding the 30 RPS limit.
-2.  **Completion Rate Remains Stable**: The **Completion Rate** remains relatively constant at around 14 files/second, regardless of the number of workers. This demonstrates that the true bottleneck is not the client or the network, but the finite speed at which the Azure OpenAI service can process and index the files on the backend.
-3.  **No Rate-Limiting Encountered**: Even when submitting at nearly 100 RPS, no HTTP 429 errors were encountered in this test run, indicating the service has a robust capacity for ingesting requests.
+1.  **Submission Rate Scales but Reaches a Practical Limit**: As the number of concurrent workers increases from 20 to 100, the **Submission Rate** scales accordingly from **8.78 RPS** up to **19.47 RPS**. While this did not reach the documented 30 RPS, it proves that parallelism dramatically increases the request rate. The ceiling below 30 RPS suggests that the true performance limit is a combination of client-side resources (network/CPU), network latency, and server-side backpressure.
+
+2.  **Completion Rate Plateaus and Shows Diminishing Returns**: The end-to-end **Completion Rate** peaked at **10.49 files/sec** with 50 workers. Increasing the workers to 100 did not improve this rate; it actually decreased slightly to **9.44 files/sec**. This is a classic sign of a bottleneck on the server-side processing queue. Adding more concurrent requests from the client doesn't help if the server can only process files at a finite speed.
+
+3.  **Rate-Limiting Error Confirms the Ceiling**: The test with 100 workers triggered **one rate-limit error**. This is a critical finding, as it provides concrete evidence that we successfully found the performance ceiling for this specific environment and workload. It confirms that at around 19-20 requests per second, we are beginning to saturate the service's capacity to complete new requests.
 
 ***
 
