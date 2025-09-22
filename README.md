@@ -90,3 +90,11 @@ COMPREHENSIVE PERFORMANCE ANALYSIS OF UNIFIED UPLOAD WORKFLOW
 1.  **Submission Rate Scales with Workers**: As the number of concurrent workers increases from 20 to 100, the **Submission Rate** skyrockets from ~26 RPS to ~98 RPS. This proves that the client is fully capable of exceeding the 30 RPS limit.
 2.  **Completion Rate Remains Stable**: The **Completion Rate** remains relatively constant at around 14 files/second, regardless of the number of workers. This demonstrates that the true bottleneck is not the client or the network, but the finite speed at which the Azure OpenAI service can process and index the files on the backend.
 3.  **No Rate-Limiting Encountered**: Even when submitting at nearly 100 RPS, no HTTP 429 errors were encountered in this test run, indicating the service has a robust capacity for ingesting requests.
+
+***
+
+## Appendix: Housekeeping
+The final cell in the notebook is dedicated to cleaning up all resources created during the tests. It will:
+-   Delete the local directory of dummy files.
+-   Delete all files uploaded to the Azure OpenAI account.
+-   Delete the main vector store created for the tests.
