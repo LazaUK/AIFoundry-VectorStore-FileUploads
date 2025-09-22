@@ -14,7 +14,7 @@ This repo contains a Jupyter notebook to performance-test the file upload capabi
 ## Part 1: Configuring the Environment
 To run the provided Jupyter notebook, you will need to set up your Azure AI environment and install the required Python packages.
 
-### 1.1 Prerequisites
+### 1.1 Pre-requisites
 You need an **Azure AI Foundry** resource and project. The notebook is designed to work with the Azure AI Foundry API and its vector store capabilities.
 
 ### 1.2 Authentication
@@ -56,7 +56,7 @@ This metric measures how fast the entire process **finishes** for a batch of fil
 ## Part 3: Code Walkthrough
 The notebook is structured to first establish a baseline and then run high-concurrency tests to measure the two key performance rates.
 
-### 3.1 `run_individual_sequential_test()`
+### 3.1 Helper Function - `run_individual_sequential_test()`
 This function provides a baseline performance measurement. It processes 10 files one by one, in a single thread. This demonstrates the performance without any parallelism and serves as a point of comparison.
 
 ``` Python
@@ -100,9 +100,9 @@ def run_individual_sequential_test(file_paths, vector_store_id):
     }
 ```
 
-### 3.2 `run_unified_concurrent_test()`
+### 3.2 Helper Function - `run_unified_concurrent_test()`
 This is the core of the performance test. The function is designed to be a realistic and accurate simulation of a high-load scenario. For each file, every worker thread performs the complete, unified workflow:
-1.  **Uploads the file** from the local disk to Azure OpenAI's staging area (`client.files.create`).
+1.  **Uploads the file** from the local disk to Azure AI Foundry's staging area (`client.files.create`).
 2.  **Adds the uploaded file** to the target vector store (`client.vector_stores.files.create`).
 
 ``` Python
@@ -210,5 +210,41 @@ PERFORMANCE ANALYSIS OF UNIFIED UPLOAD WORKFLOW
 ## Appendix: Housekeeping
 The final cell in the notebook is dedicated to cleaning up all resources created during the tests. It will:
 -   Delete the local directory of dummy files.
--   Delete all files uploaded to the Azure OpenAI account.
--   Delete the main vector store created for the tests.
+-   Delete all files uploaded to the Azure AI Foundry's storage account.
+-   Delete the vector store created for the tests.
+
+``` Python
+def cleanup():
+    print("\n" + "="*50)
+    print("CLEANUP")
+    print("="*50)
+    
+    # Clean up local files
+    if 'temp_dir' in globals() and temp_dir and os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
+        print(f"Deleted test files in the local directory")
+    
+    # Clean up the vector store and any remaining files.
+    print("Deleting main vector store and all uploaded files from Azure OpenAI...")
+    
+    all_uploaded_files = client.files.list()
+    file_ids_to_delete = [f.id for f in all_uploaded_files]
+    
+    deleted_count = 0
+    print(f"Found {len(file_ids_to_delete)} total files in the account to delete...")
+    for file_id in file_ids_to_delete:
+        try:
+            client.files.delete(file_id)
+            deleted_count += 1
+        except Exception:
+            # Ignore errors for files that might already be deleted
+            pass
+    print(f"Successfully deleted {deleted_count}/{len(file_ids_to_delete)} files.")
+    
+    # Delete the main vector store
+    try:
+        client.vector_stores.delete(vector_store_id=vector_store_id)
+        print(f"Deleted vector store: {vector_store_id}")
+    except Exception as e:
+        print(f"Failed to delete vector store {vector_store_id}: {e}")
+```
