@@ -23,11 +23,11 @@ The demo uses **Microsoft Entra ID** authentication via `DefaultAzureCredential`
 ### 1.3 Environment Variables
 Configure the following environment variables with your Azure AI Foundry resource details. This is the most secure way to handle credentials, as it avoids hardcoding them into the notebook.
 
-| Environment Variable             | Description                                                     |
-| :------------------------------- | :-------------------------------------------------------------- |
-| `AZURE_OPENAI_API_BASE`          | The endpoint URL for your Azure OpenAI resource.                |
-| `AZURE_OPENAI_API_VERSION`       | The API version you are targeting (e.g., `2024-05-01-preview`). |
-| `ZURE_OPENAI_API_DEPLOY`         | The deployment name of your GPT model (e.g., `gpt-4.1`)         |
+| Environment Variable             | Description                                                         |
+| :------------------------------- | :------------------------------------------------------------------ |
+| `AZURE_OPENAI_API_BASE`          | The endpoint URL for your Azure AI Foundry's Azure OpenAI resource. |
+| `AZURE_OPENAI_API_VERSION`       | The API version you are targeting (e.g., `2024-05-01-preview`).     |
+| `ZURE_OPENAI_API_DEPLOY`         | The deployment name of your GPT model (e.g., `gpt-4.1`)             |
 
 ### 1.4 Required Libraries
 Install the necessary Python packages using pip command.
