@@ -188,7 +188,7 @@ The final cell of the notebook collects the data from all test runs and presents
 ### 4.1 Sample Results Table
 The output is a pandas DataFrame that allows for easy comparison of the different test scenarios.
 
-```
+``` JSON
 ==============================================================================================================
 PERFORMANCE ANALYSIS OF UNIFIED UPLOAD WORKFLOW
 ==============================================================================================================
