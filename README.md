@@ -1,9 +1,6 @@
-# Azure AI Foundry: Performance Testing File Uploads to Vector Stores
+# Azure AI Foundry: Performance Testing File Uploads
 
-This repository contains a Jupyter Notebook designed to performance-test the file upload capabilities of **Azure OpenAI**, specifically targeting the "30 requests per second" limit for vector stores. It provides a practical solution for measuring and understanding the difference between request submission rates and end-to-end processing throughput.
-
-> [!IMPORTANT]
-> The key takeaway from this analysis is that the **30 requests per second (RPS) limit applies to *request submission*, not the total end-to-end processing time.** This notebook demonstrates that a client can easily submit requests far faster than 30 RPS, while the final completion rate is dependent on server-side processing.
+This repo contains a Jupyter notebook to performance-test the file upload capabilities of **Azure AI Foundry** (specifically targeting the ["30 requests per second" limit](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/quotas-limits?tabs=REST#quotas-and-limits-reference)). It provides a practical solution for measuring and understanding the difference between request submission rates and end-to-end processing throughput.
 
 ***
 
@@ -15,33 +12,26 @@ This repository contains a Jupyter Notebook designed to performance-test the fil
 - [Appendix: Housekeeping](#appendix-housekeeping)
 
 ## Part 1: Configuring the Environment
-To run the provided Jupyter notebook, you will need to set up your Azure OpenAI environment and install the required Python packages.
+To run the provided Jupyter notebook, you will need to set up your Azure AI environment and install the required Python packages.
 
 ### 1.1 Prerequisites
-You need an **Azure OpenAI** resource and project. The notebook is designed to work with the Assistants API and its vector store capabilities.
+You need an **Azure AI Foundry** resource and project. The notebook is designed to work with the Azure AI Foundry API and its vector store capabilities.
 
 ### 1.2 Authentication
-The demo uses **Microsoft Entra ID** authentication via `DefaultAzureCredential` from the `azure.identity` package. To enable this, ensure you are authenticated in your environment, for example by using the Azure CLI (`az login`), setting environment variables for a service principal, or using a managed identity.
+The demo uses **Microsoft Entra ID** authentication via `DefaultAzureCredential` from the `azure.identity` package. To enable this, ensure you are authenticated in your environment, for example by using the Azure CLI (`az login`), setting environment variables for a service principal or using a managed identity.
 
 ### 1.3 Environment Variables
-Configure the following environment variables with your Azure OpenAI resource details. This is the most secure way to handle credentials, as it avoids hardcoding them into the notebook.
+Configure the following environment variables with your Azure AI Foundry resource details. This is the most secure way to handle credentials, as it avoids hardcoding them into the notebook.
 
-| Environment Variable             | Description                                               |
-| :------------------------------- | :-------------------------------------------------------- |
-| `AZURE_OPENAI_API_BASE`          | The endpoint URL for your Azure OpenAI resource.          |
+| Environment Variable             | Description                                                     |
+| :------------------------------- | :-------------------------------------------------------------- |
+| `AZURE_OPENAI_API_BASE`          | The endpoint URL for your Azure OpenAI resource.                |
 | `AZURE_OPENAI_API_VERSION`       | The API version you are targeting (e.g., `2024-05-01-preview`). |
+| `ZURE_OPENAI_API_DEPLOY`         | The deployment name of your GPT model (e.g., `gpt-4.1`)         |
 
 ### 1.4 Required Libraries
-Install the necessary Python packages using pip. It is recommended to use a `requirements.txt` file.
+Install the necessary Python packages using pip command.
 
-```bash
-# requirements.txt
-openai
-azure-identity
-pandas
-```
-
-Install with:
 ```bash
 pip install -r requirements.txt
 ```
@@ -52,16 +42,14 @@ pip install -r requirements.txt
 The primary goal of this notebook is to clarify a common point of confusion: the difference between the API's rate limit and the total processing time a user experiences.
 
 ### 2.1 Request Submission Rate (The 30 RPS Limit)
-This metric measures how fast your client can **send** requests to the Azure OpenAI endpoint. Think of it like stuffing letters into a mailbox—the 30 RPS limit governs how fast you can put letters *in*. This is the rate that is subject to API throttling (HTTP 429 errors). Our test measures this by calculating the time elapsed between the first request being sent and the last request being sent.
+This metric measures how fast your client can **send** requests to the Azure AI Foundry endpoint. Think of it like stuffing letters into a mailbox—the 30 RPS limit governs how fast you can put letters *in*. This is the rate that is subject to API throttling (HTTP 429 errors). Our test measures this by calculating the time elapsed between the first request being sent and the last request being sent.
 
 `Submission Rate = Total Files / (Time of Last Request - Time of First Request)`
 
 ### 2.2 Completion Rate (End-to-End Throughput)
-This metric measures how fast the entire process **finishes** for a batch of files. It includes network latency, server-side processing (scanning, indexing the file), and the response time. This is like waiting for a delivery confirmation for every letter you mailed. This rate is always lower than the submission rate because server-side work takes time.
+This metric measures how fast the entire process **finishes** for a batch of files. It includes network latency, server-side processing (scanning, indexing the file) and the response time. This is like waiting for a delivery confirmation for every letter you mailed. This rate is always lower than the submission rate because server-side work takes time.
 
 `Completion Rate = Total Successful Files / (Time of Last Completion - Time of First Request)`
-
-This notebook proves that while the **Completion Rate** may be around 10-15 files/second, the **Submission Rate** can easily exceed the 30 RPS limit.
 
 ***
 
